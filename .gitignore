@@ -3,3 +3,4 @@ src/config/config.json
 uploads/*
 .wwebjs_auth
 .idea
+dist
