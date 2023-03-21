@@ -58,6 +58,7 @@ class MainController{
     }
 
     async workController(job: Job){
+        console.log(`${job.name} started`);
         if(job.data.type === MessageType.PLAIN){
             const data: PlainMessage = job.data;
             await ConversationService.handlePlainMessage(data.body.toString(), data.to);

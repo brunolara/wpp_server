@@ -2,9 +2,6 @@ import {Client, LocalAuth, MessageMedia, WAState} from "whatsapp-web.js";
 
 import qrcode from "qrcode-terminal";
 import ConfigService, {CONFIGURATION} from "../services/config.service";
-import {Worker} from "bullmq";
-import MainController from "../controllers/main.controller";
-import {queue} from '../config/config.json';
 import path from "path";
 
 const WppClient = new Client({
@@ -23,11 +20,6 @@ WppClient.on('qr', (qr) => {
 WppClient.on('ready', async () =>{
     console.log('READY');
     await ConfigService.set(CONFIGURATION.CURRENT_PHONE_NUMBER, WppClient.info.wid.user);
-    /* starting worker */
-    const myWorker = new Worker(queue.queueName, MainController.workController, {
-        connection: queue.connection
-    });
-
 });
 
 WppClient.on('auth_failure', (msg) => {
