@@ -7,12 +7,12 @@ import {Base64Message, MessageType, PlainMessage, RemoteFileMessage} from "../DT
 
 class MainController{
     async sendPlain(req: Request, res: Response){
-        const {to, body} = req.body;
+        const {to = '', body} = req.body;
         if (!body || body.length === 0)
             return res.status(422).json({'error': 'Mensagem vazia'});
 
-        await MainQueue.add(`${to}_${new Date().getTime()}`,
-                {to, body, type: MessageType.PLAIN},
+        await MainQueue.add(`${to.trim()}_${new Date().getTime()}`,
+                {to: to.trim(), body, type: MessageType.PLAIN},
                 queue.jobOptions
             );
         return res.status(200).json({});
@@ -20,7 +20,7 @@ class MainController{
 
     async sendFile(req: Request, res: Response){
         const {
-            to,
+            to = '',
             base64File = null,
             fileUrl = null,
             mimeType = null,
@@ -39,8 +39,8 @@ class MainController{
                     {'error': 'Arquivos em base64 precisam ter um nome: nome.extensão'}
                 );
 
-            await MainQueue.add(`${to}_${new Date().getMilliseconds()}`,
-                {base64File, mimeType, fileName, to, type: MessageType.BASE64},
+            await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
+                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64},
                 queue.jobOptions
             );
         }
@@ -49,8 +49,8 @@ class MainController{
                 return res.status(422).json(
                     {'error': 'Arquivos em URL precisam ter um nome: nome.extensão'}
                 );
-            await MainQueue.add(`${to}_${new Date().getMilliseconds()}`,
-                {fileUrl, fileName, to, type: MessageType.REMOTE},
+            await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
+                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE},
                 queue.jobOptions
             );
         }
