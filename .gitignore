@@ -4,3 +4,4 @@ uploads/*
 .wwebjs_auth
 .idea
 dist
+session
