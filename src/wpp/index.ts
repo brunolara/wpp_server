@@ -1,11 +1,15 @@
-import {Client, LocalAuth, MessageMedia, WAState, Message, ContactId, Chat} from "whatsapp-web.js";
+import {Client, LocalAuth, MessageMedia, WAState} from "whatsapp-web.js";
 
 import qrcode from "qrcode-terminal";
 import ConfigService, {CONFIGURATION} from "../services/config.service";
+import path from "path";
 
 const WppClient = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth({
+        dataPath: path.resolve("./")
+    })
 });
+
 
 WppClient.on('qr', (qr) => {
     console.log("QR")
@@ -13,9 +17,9 @@ WppClient.on('qr', (qr) => {
     qrcode.generate(qr, {small: true});
 });
 
-WppClient.on('ready', () =>{
+WppClient.on('ready', async () =>{
     console.log('READY');
-    ConfigService.set(CONFIGURATION.CURRENT_PHONE_NUMBER, WppClient.info.wid.user);
+    await ConfigService.set(CONFIGURATION.CURRENT_PHONE_NUMBER, WppClient.info.wid.user);
 });
 
 WppClient.on('auth_failure', (msg) => {
@@ -40,7 +44,6 @@ async function getMedia(url:string, fileName: string):Promise<MessageMedia | nul
 
 async function getMediaFromBase64(data: string, fileName: string, mimeType: string):Promise<MessageMedia | null>{
     try {
-        console.log(data, fileName, mimeType)
         return await new MessageMedia(mimeType, data, fileName)
     } catch (e){
         return null;
@@ -59,7 +62,6 @@ async function sendMessage(to: string, body: string | MessageMedia, caption: str
             body, {caption: caption ?? ''}
         );
     } catch (e){
-        console.log(e)
         return null;
     }
 }

@@ -22,5 +22,20 @@
     "host": "127.0.0.1",
     "dialect": "postgres",
     "timezone": "-03:00"
+  },
+  "queue": {
+    "queueName": "messageProcessor",
+    "connection":{
+      "host": "localhost",
+      "password": "password"
+    },
+    "jobOptions": {
+      "delay": 1000,
+      "attempts": 3,
+      "backoff": {
+        "type": "exponential",
+        "delay": 3000
+      }
+    }
   }
 }
