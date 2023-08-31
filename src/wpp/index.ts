@@ -22,6 +22,10 @@ WppClient.on('ready', async () =>{
     await ConfigService.set(CONFIGURATION.CURRENT_PHONE_NUMBER, WppClient.info.wid.user);
 });
 
+WppClient.on('loading_screen', (percent, message) => {
+    console.log('LOADING SCREEN', percent, message);
+});
+
 WppClient.on('auth_failure', (msg) => {
     // Fired if session restore was unsuccessful
     console.error('AUTHENTICATION FAILURE', msg);
