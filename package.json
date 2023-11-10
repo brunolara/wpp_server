@@ -19,7 +19,7 @@
     "qrcode-terminal": "^0.12.0",
     "sequelize": "^6.29.3",
     "uuid": "^9.0.0",
-    "whatsapp-web.js": "1.22.2-alpha.0"
+    "whatsapp-web.js": "v1.23.0"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.1",
