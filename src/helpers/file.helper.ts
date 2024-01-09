@@ -27,8 +27,6 @@ async function saveBaseToFile(fileName: string, mimeType: string, data: string){
         fs.writeFileSync(fullDir, buff);
         return uploadDir;
     } catch (e){
-        console.log(e)
-        console.log(`${path.resolve(__dirname)}/uploads/${fileName}`)
         return null;
     }
 }

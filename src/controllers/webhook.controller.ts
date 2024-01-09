@@ -15,7 +15,6 @@ class WebhookController{
     }
 
     async addMessageStatusToQueue(msg: Message){
-        console.log('ack', msg.ack)
         if(msg.ack === MessageAck.ACK_PENDING) return;
         await WebhookService.addMessageStatusToQueue(msg);
     }

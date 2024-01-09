@@ -45,7 +45,6 @@ class ConversationService {
                 wppMessageId
             })
         } catch (e){
-            console.log(e)
             return null
         }
     }
@@ -60,7 +59,6 @@ class ConversationService {
         const pathToSave = `${contactId.user}/${generatedName}`;
         const message = await getMediaFromBase64(base64File, fileName, mimeType);
         const localPath = await saveBaseToFile(pathToSave, mimeType, base64File);
-        console.log(localPath);
         if(message) {
             const messageResponse = await sendMessage(to, message);
             const wppMessageId = messageResponse?.id._serialized;

@@ -14,7 +14,6 @@ const sequelize = new Sequelize({
     timezone: config[env as keyof object]['timezone'],
     logging: false // Para desativar o log de consultas no console
 });
-console.log(config[env as keyof object]);
 
 // Testa a conexão com o banco de dados
 (async () => {
