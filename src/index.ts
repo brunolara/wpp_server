@@ -13,7 +13,11 @@ const route = Router()
 
 app.use(express.json())
 
-WppClient.on('message', WebhookController.notifyMessage);
+// WppClient.on('message', WebhookController.notifyMessage);
+WppClient.on('message_ack', WebhookController.addMessageStatusToQueue);
+WppClient.on('ready', () => messageWorker.run());
+WppClient.on('disconnected', () => messageWorker.pause());
+WppClient.on('auth_failure', () => messageWorker.pause())
 
 route.post('/sendMessage', checkAuthKey, MainController.sendPlain);
 route.post('/sendFile', checkAuthKey, MainController.sendFile);
@@ -31,10 +35,19 @@ app.use(route);
 app.listen(3333, () => console.log('server running on port 3333'));
 
 /* starting worker */
-const worker = new Worker(queue.queueName, MainController.workController, {
-    connection: queue.connection
+const messageWorker = new Worker(queue.messageQueueName, MainController.messageWorkController, {
+    connection: queue.connection,
+    autorun: false
 });
 
-worker.on('completed', job => {
+const webhookWorker = new Worker(queue.webhookQueueName, WebhookController.webhookWorkController, {
+    connection: queue.connection,
+    autorun: true
+});
+
+messageWorker.on('completed', job => {
     console.log(`${job.name} finished`);
 });
+webhookWorker.on('completed', job => {
+    console.log(`${job.name} finished`);
+})

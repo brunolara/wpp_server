@@ -3,25 +3,24 @@ enum MessageType {
     BASE64 = 'base64File',
     REMOTE = 'remoteFile',
 }
-interface PlainMessage{
+
+interface BaseMessage{
     to: string,
+    messageId: string
+}
+interface PlainMessage extends BaseMessage{
     body: string,
-    type: MessageType
 }
 
-interface Base64Message{
-    to: string,
+interface Base64Message extends BaseMessage{
     base64File: string,
     mimeType: string,
     fileName: string,
-    type: MessageType
 }
 
-interface RemoteFileMessage{
-    to: string,
+interface RemoteFileMessage extends BaseMessage{
     fileUrl: string,
     fileName: string,
-    type: MessageType
 }
 
 export {PlainMessage, MessageType, Base64Message, RemoteFileMessage}

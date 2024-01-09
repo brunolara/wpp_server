@@ -1,9 +1,13 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
 import { Conversation } from './conversation';
+import {MessageAck} from "whatsapp-web.js";
 
 class Message extends Model {
     public id!: number;
+    public messageId!: string;
+    public wppMessageStatus!: MessageAck;
+    public wppMessageId!: string;
     public conversationId!: number;
     public message!: string | null;
     public messageFilePath!: string | null;
@@ -19,6 +23,19 @@ Message.init(
             allowNull: false,
             autoIncrement: true,
             primaryKey: true
+        },
+        messageId: {
+            field: 'message_id',
+            type: DataTypes.STRING,
+        },
+        wppMessageId: {
+            field: 'wpp_message_id',
+            type: DataTypes.STRING,
+        },
+        wppMessageStatus: {
+            field: 'wpp_message_status',
+            type: DataTypes.INTEGER,
+            defaultValue: 0
         },
         conversationId: {
             field: 'conversation_id',

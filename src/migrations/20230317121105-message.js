@@ -1,4 +1,5 @@
 'use strict';
+const {DataTypes} = require("sequelize");
 module.exports = {
     up: async (queryInterface, Sequelize) => {
         await queryInterface.createTable('messages', {
@@ -7,6 +8,19 @@ module.exports = {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true
+            },
+            wppMessageStatus: {
+                field: 'wpp_message_status',
+                type: Sequelize.INTEGER,
+                defaultValue: 0
+            },
+            messageId: {
+                field: 'message_id',
+                type: Sequelize.STRING,
+            },
+            wppMessageId: {
+                field: 'wpp_message_id',
+                type: Sequelize.STRING,
             },
             conversationId: {
                 field: 'conversation_id',

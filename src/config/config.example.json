@@ -24,13 +24,21 @@
     "timezone": "-03:00"
   },
   "queue": {
-    "queueName": "messageProcessor",
+    "messageQueueName": "messageProcessor",
     "connection":{
       "host": "localhost",
       "password": "password"
     },
-    "jobOptions": {
+    "messageJobOptions": {
       "delay": 1000,
+      "attempts": 3,
+      "backoff": {
+        "type": "exponential",
+        "delay": 3000
+      }
+    },
+    "webhookJobOptions": {
+      "delay": 1300,
       "attempts": 3,
       "backoff": {
         "type": "exponential",

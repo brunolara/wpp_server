@@ -1,18 +1,27 @@
-import {Message, MessageTypes} from "whatsapp-web.js";
-import {Webhook} from "../models/webhook";
-import axios from "axios";
+import {Job} from "bullmq";
+import {WebhookType} from "../DTO/Webhook";
+import ConversationService from "../services/conversation.service";
+import WebhookService from "../services/webhook.service";
+import {WebhookQueue} from "../queue";
+import {queue} from '../config/config.json';
+import {Message, MessageAck} from "whatsapp-web.js";
 
 class WebhookController{
-    async notifyMessage(msg: Message){
-        let chat = await msg.getChat();
-        /* direct messages only */
-        if(chat.isGroup || msg.type !== MessageTypes.TEXT) return;
-        const webhookList = await Webhook.findAll({
-            where: {'status': 'active'}
-        });
-        const reqs = webhookList.map(item => axios.post(item.url, msg, {timeout: 3000}));
-        await axios.all(reqs);
+    async webhookWorkController(job: Job){
+        const data = job.data;
+        if(data.type === WebhookType.MESSAGE_ACK){
+            await WebhookService.sendMessageStatusNotification(data.message);
+        }
+        if(data.type === WebhookType.NUMBER_CHECK){
+            await WebhookService.sendValidateNumber(data.number, data.messageId, data.status);
+        }
     }
+
+    async addMessageStatusToQueue(msg: Message){
+        if(msg.ack === MessageAck.ACK_PENDING) return;
+        await WebhookService.addMessageStatusToQueue(msg);
+    }
+
 }
 
 export default new WebhookController();
