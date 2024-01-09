@@ -1,9 +1,6 @@
 import {Job} from "bullmq";
 import {WebhookType} from "../DTO/Webhook";
-import ConversationService from "../services/conversation.service";
 import WebhookService from "../services/webhook.service";
-import {WebhookQueue} from "../queue";
-import {queue} from '../config/config.json';
 import {Message, MessageAck} from "whatsapp-web.js";
 
 class WebhookController{
@@ -18,6 +15,7 @@ class WebhookController{
     }
 
     async addMessageStatusToQueue(msg: Message){
+        console.log('ack', msg.ack)
         if(msg.ack === MessageAck.ACK_PENDING) return;
         await WebhookService.addMessageStatusToQueue(msg);
     }

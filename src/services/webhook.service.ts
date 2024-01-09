@@ -1,9 +1,9 @@
 import {Message} from "../models/message";
-import {MessageAck, Message as WppMessage} from "whatsapp-web.js";
+import {Message as WppMessage} from "whatsapp-web.js";
 import {Webhook} from "../models/webhook";
 import axios from "axios";
 import {WebhookType} from "../DTO/Webhook";
-import {WebhookQueue} from "../queue";
+import {WebhookQueue} from "../queue/main";
 import {queue} from '../config/config.json';
 class WebhookService{
     async getMessageByWppId(wppMessageId: string){
@@ -37,6 +37,7 @@ class WebhookService{
     }
 
     async addMessageStatusToQueue(msg: WppMessage){
+        
         await WebhookQueue.add(`ack_${msg.id._serialized}_${msg.ack}`,
             {message:msg, type: WebhookType.MESSAGE_ACK},
             queue.webhookJobOptions

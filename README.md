@@ -15,6 +15,21 @@ Envia uma mensagem com texto plano. Ex:
 }
 ```
 
+### POST /sendMessageBulk
+Envia várias mensagens com texto plano . Ex:
+```json
+[
+  {
+    "to": "5545999999999",
+    "body": "Olá, como vai"
+  },
+  {
+    "to": "5545999999999",
+    "body": "Você está bem?"
+  }
+]
+```
+
 
 ### POST /sendFile (Arquivo em bas64)
 Envia um arquivo encodado em base64:
@@ -39,6 +54,10 @@ Envia um arquivo apartir de uma URL externa:
 
 ### GET /ping
 Request simples para checar se o whatsapp está funcional
+
+
+### GET /message/:id
+Request simples para pegar os dados da mensagem atual (usar o uuid retornado no envio da mensagem)
 
 
 ### Autenticação

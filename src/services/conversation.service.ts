@@ -53,7 +53,7 @@ class ConversationService {
     async handleBase64FileMessage(base64File: string, mimeType: string, fileName: string, to: string, messageId: string){
         const contactId = await getContactFromNumber(to);
         if(!contactId) {
-            this.handleNumberCheck(to, messageId, false);
+            await this.handleNumberCheck(to, messageId, false);
             return null;
         }
         const generatedName = generateFileName(fileName);
@@ -73,7 +73,7 @@ class ConversationService {
     async handleFileUrl(fileUrl: string, filename: string, to: string, messageId: string){
         const contactId = await getContactFromNumber(to);
         if(!contactId) {
-            this.handleNumberCheck(to, messageId, false);
+            await this.handleNumberCheck(to, messageId, false);
             return null;
         }
         const message = await getMedia(fileUrl, filename);
@@ -89,7 +89,7 @@ class ConversationService {
     async handlePlainMessage(body: string, to: string, messageId: string){
         const contactId = await getContactFromNumber(to);
         if(!contactId) {
-            this.handleNumberCheck(to, messageId, false);
+            await this.handleNumberCheck(to, messageId, false);
             return null;
         }
         const messageResponse = await sendMessage(to, body);
@@ -104,6 +104,12 @@ class ConversationService {
     async handleNumberCheck(number: string, messageId?: string, valid?: boolean){
         if(valid === undefined) valid = !!(await getContactFromNumber(number));
         await WebhookService.addNumberCheckToQueue(number, messageId, valid);
+    }
+
+    async getMessageById(id: string){
+        return await Message.findOne({
+            where: {messageId: id}
+        });
     }
 }
 

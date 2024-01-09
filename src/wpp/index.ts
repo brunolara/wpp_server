@@ -3,13 +3,16 @@ import {Client, LocalAuth, MessageMedia, WAState} from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
 import ConfigService, {CONFIGURATION} from "../services/config.service";
 import path from "path";
+import {startWorkers, stopWorkers} from "../queue/worker";
 
 const WppClient = new Client({
     authStrategy: new LocalAuth({
         dataPath: path.resolve("./")
     })
 });
-
+WppClient.on('ready', () => startWorkers());
+WppClient.on('disconnected', () => stopWorkers());
+WppClient.on('auth_failure', () => stopWorkers())
 
 WppClient.on('qr', (qr) => {
     console.log("QR")
@@ -30,10 +33,6 @@ WppClient.on('auth_failure', (msg) => {
     // Fired if session restore was unsuccessful
     console.error('AUTHENTICATION FAILURE', msg);
 });
-
-
-
-WppClient.initialize();
 
 async function getMedia(url:string, fileName: string):Promise<MessageMedia | null>{
     try {
