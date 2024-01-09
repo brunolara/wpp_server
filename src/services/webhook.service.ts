@@ -37,7 +37,6 @@ class WebhookService{
     }
 
     async addMessageStatusToQueue(msg: WppMessage){
-        
         await WebhookQueue.add(`ack_${msg.id._serialized}_${msg.ack}`,
             {message:msg, type: WebhookType.MESSAGE_ACK},
             queue.webhookJobOptions
@@ -49,7 +48,6 @@ class WebhookService{
             where: {'status': 'active'}
         });
         const event = {type: WebhookType.NUMBER_CHECK, number, valid, messageId};
-        console.log(event)
         const reqs = webhookList.map(item => axios.post(item.url, event, {timeout: 3000}));
         await axios.all(reqs);
     }

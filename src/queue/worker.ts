@@ -13,8 +13,8 @@ const webhookWorker = new Worker(queue.webhookQueueName, WebhookController.webho
 });
 
 const startWorkers = async () => {
-    await messageWorker.run();
-    await webhookWorker.run();
+    messageWorker.run();
+    webhookWorker.run();
 }
 
 const stopWorkers = async () => {

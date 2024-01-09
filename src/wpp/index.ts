@@ -9,10 +9,9 @@ const WppClient = new Client({
     authStrategy: new LocalAuth({
         dataPath: path.resolve("./")
     })
-});
-WppClient.on('ready', () => startWorkers());
+})
+
 WppClient.on('disconnected', () => stopWorkers());
-WppClient.on('auth_failure', () => stopWorkers())
 
 WppClient.on('qr', (qr) => {
     console.log("QR")
@@ -21,8 +20,9 @@ WppClient.on('qr', (qr) => {
 });
 
 WppClient.on('ready', async () =>{
-    console.log('READY');
+    startWorkers();
     await ConfigService.set(CONFIGURATION.CURRENT_PHONE_NUMBER, WppClient.info.wid.user);
+    console.log('READY');
 });
 
 WppClient.on('loading_screen', (percent, message) => {
@@ -32,6 +32,7 @@ WppClient.on('loading_screen', (percent, message) => {
 WppClient.on('auth_failure', (msg) => {
     // Fired if session restore was unsuccessful
     console.error('AUTHENTICATION FAILURE', msg);
+    stopWorkers();
 });
 
 async function getMedia(url:string, fileName: string):Promise<MessageMedia | null>{
