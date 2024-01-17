@@ -9,14 +9,6 @@ module.exports = {
                 autoIncrement: true,
                 primaryKey: true
             },
-            session_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: {
-                    model: 'sessions',
-                    key: 'id'
-                }
-            },
             wppMessageStatus: {
                 field: 'wpp_message_status',
                 type: Sequelize.INTEGER,

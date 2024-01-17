@@ -4,9 +4,11 @@ import {Session} from "./models/session";
 import {Config} from "./models/config";
 import wppStateService from "./services/wpp.state.service";
 import MainController from "./controllers/main.controller";
+import {startWorkers} from "./queue/worker";
 
 
 wppStateService.startAll().then((clients) => {
+    startWorkers();
 }).catch((err) => console.log('error', err));
 
 declare global {
@@ -34,7 +36,7 @@ route.get('/teste', (req, res) => {
     });
     // res.json({message: 'ok'})
 })
-// route.use(checkAuthKey);
+route.use(checkAuthKey);
 
 route.post('/sendMessage', MainController.sendPlain);
 route.post('/sendMessageBulk', MainController.sendBulk);

@@ -13,8 +13,7 @@ class MainController{
         if (!body || body.length === 0)
             return res.status(422).json({'error': 'Mensagem vazia'});
         await MainQueue.add(`${to.trim()}_${new Date().getTime()}`,
-            {to: to.trim(), body, type: MessageType.PLAIN, messageId},
-            queue.messageJobOptions
+            {to: to.trim(), body, type: MessageType.PLAIN, messageId, sessionData: req.context}
         );
         return res.status(200).json({messageId});
     }
@@ -34,8 +33,7 @@ class MainController{
             }
             responseItem.messageId = messageId;
             await MainQueue.add(`${to.trim()}_${new Date().getTime()}`,
-                {to: to.trim(), body, type: MessageType.PLAIN, messageId},
-                queue.messageJobOptions
+                {to: to.trim(), body, type: MessageType.PLAIN, messageId, sessionData: req.context}
             );
             responseItem.success = true;
             return responseItem;
@@ -67,8 +65,7 @@ class MainController{
                 );
 
             await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
-                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64, messageId},
-                queue.messageJobOptions
+                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64, messageId, sessionData: req.context},
             );
         }
         else if(fileUrl){
@@ -77,14 +74,10 @@ class MainController{
                     {'error': 'Arquivos em URL precisam ter um nome: nome.extensão'}
                 );
             await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
-                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE, messageId},
-                queue.messageJobOptions
+                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE, messageId, sessionData: req.context},
             );
         }
         return res.status(200).json({messageId});
-    }
-
-    async messageWorkController(job: Job){
     }
 
     async getMessage(req: Request, res: Response){

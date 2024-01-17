@@ -8,6 +8,7 @@ class Conversation extends Model {
     declare userNumber: string;
     declare lastInteractionDate: Date;
     declare currentNumber: string | null;
+    declare sessionId: number;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 }
@@ -19,6 +20,15 @@ Conversation.init(
             allowNull: false,
             autoIncrement: true,
             primaryKey: true
+        },
+        sessionId: {
+            type: DataTypes.INTEGER,
+            field: 'session_id',
+            allowNull: false,
+            references: {
+                model: 'sessions',
+                key: 'id'
+            }
         },
         isUserStarted: {
             field: 'is_user_started',

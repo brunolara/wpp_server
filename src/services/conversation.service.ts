@@ -8,13 +8,21 @@ import {Webhook} from "../models/webhook";
 import axios from "axios";
 import {WebhookType} from "../DTO/Webhook";
 import WebhookService from "./webhook.service";
+import {WppService} from "./wpp.service";
+import webhookService from "./webhook.service";
 
 class ConversationService {
+    session: WppService;
+    constructor(session: WppService) {
+        this.session = session;
+    }
+
     async saveSentMessage(to: string, body: string, filePath: string | null = null, messageId: string, wppMessageId?: string){
         try {
             const conversation = await Conversation.findOne({
                 where: {
-                    user_number: to
+                    user_number: to,
+                    session_id: this.session.sessionId
                 }
             });
 
@@ -27,6 +35,7 @@ class ConversationService {
             }
             else {
                 const c = Conversation.build({
+                    sessionId: this.session.sessionId,
                     isUserStarted: false,
                     userNumber: to,
                     lastInteractionDate: new Date(),
@@ -50,9 +59,9 @@ class ConversationService {
     }
 
     async handleBase64FileMessage(base64File: string, mimeType: string, fileName: string, to: string, messageId: string){
-        const contactId = await getContactFromNumber(to);
+        const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.handleNumberCheck(to, messageId, false);
+            await this.sendNumberCheck(to, messageId, false);
             return null;
         }
         const generatedName = generateFileName(fileName);
@@ -60,55 +69,58 @@ class ConversationService {
         const message = await getMediaFromBase64(base64File, fileName, mimeType);
         const localPath = await saveBaseToFile(pathToSave, mimeType, base64File);
         if(message) {
-            const messageResponse = await sendMessage(to, message);
+            const messageResponse = await this.session.sendMessage(to, message);
             const wppMessageId = messageResponse?.id._serialized;
             await this.saveSentMessage(contactId?.user ?? '', '', localPath, messageId, wppMessageId);
             return messageResponse;
         }
+        await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on get media from base64')
         return null;
     }
 
     async handleFileUrl(fileUrl: string, filename: string, to: string, messageId: string){
-        const contactId = await getContactFromNumber(to);
+        const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.handleNumberCheck(to, messageId, false);
+            await this.sendNumberCheck(to, messageId, false);
             return null;
         }
         const message = await getMedia(fileUrl, filename);
         if(message) {
-            const messageResponse = await sendMessage(to, message);
+            const messageResponse = await this.session.sendMessage(to, message);
             const wppMessageId = messageResponse?.id._serialized;
             await this.saveSentMessage(contactId?.user ?? '', '', fileUrl, messageId, wppMessageId);
             return messageResponse;
         }
+        await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on get media from url')
         return null;
     }
 
     async handlePlainMessage(body: string, to: string, messageId: string){
-        const contactId = await getContactFromNumber(to);
+        const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.handleNumberCheck(to, messageId, false);
+            await this.sendNumberCheck(to, messageId, false);
             return null;
         }
-        const messageResponse = await sendMessage(to, body);
+        const messageResponse = await this.session.sendMessage(to, body);
         const wppMessageId = messageResponse?.id._serialized;
         if(messageResponse) {
             await this.saveSentMessage(contactId?.user ?? '', body, null, messageId, wppMessageId);
             return messageResponse;
         }
+        await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on send message')
         return null;
     }
 
-    async handleNumberCheck(number: string, messageId?: string, valid?: boolean){
-        if(valid === undefined) valid = !!(await getContactFromNumber(number));
-        await WebhookService.addNumberCheckToQueue(number, messageId, valid);
+    async sendNumberCheck(number: string, messageId?: string, valid?: boolean){
+        if(valid === undefined) valid = !!(await this.session.getContactFromNumber(number));
+        await WebhookService.addNumberCheckToQueue(number, this.session.sessionId, messageId, valid);
     }
 
-    async getMessageById(id: string){
+    static async getMessageById(id: string){
         return await Message.findOne({
             where: {messageId: id}
         });
     }
 }
 
-export default new ConversationService()
+export default ConversationService;

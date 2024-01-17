@@ -17,7 +17,7 @@ class WppStateService {
         const clientId = `session-${s.id}`;
         const client = new Client({
             authStrategy: new LocalAuth({
-                dataPath: path.resolve("./"),
+                dataPath: path.resolve("./session"),
                 clientId
             })
         });
@@ -51,7 +51,7 @@ class WppStateService {
         return this.sessions.find(session => session.sessionId === sessionId);
     }
 
-    async setWppSessionStatus(sessionId: number, status: WAState){
+    async setWppSessionStatus(sessionId: number, status: WAState | string){
         const session = this.sessions.find(session => session.sessionId === sessionId);
         if(!session) return;
         session.currentStatus = status;
