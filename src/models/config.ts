@@ -2,11 +2,11 @@ import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
 
 class Config extends Model {
-    public id!: number;
-    public key!: string;
-    public value!: string;
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    declare id: number;
+    declare key: string;
+    declare value: string;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
 }
 
 Config.init(

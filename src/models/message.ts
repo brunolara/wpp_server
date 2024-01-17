@@ -4,16 +4,16 @@ import { Conversation } from './conversation';
 import {MessageAck} from "whatsapp-web.js";
 
 class Message extends Model {
-    public id!: number;
-    public messageId!: string;
-    public wppMessageStatus!: MessageAck;
-    public wppMessageId!: string;
-    public conversationId!: number;
-    public message!: string | null;
-    public messageFilePath!: string | null;
-    public isUser!: boolean;
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    declare id: number;
+    declare messageId: string;
+    declare wppMessageStatus: MessageAck;
+    declare wppMessageId: string;
+    declare conversationId: number;
+    declare message: string | null;
+    declare messageFilePath: string | null;
+    declare isUser: boolean;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
 }
 
 Message.init(

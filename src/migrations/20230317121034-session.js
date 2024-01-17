@@ -1,28 +1,33 @@
 'use strict';
 module.exports = {
     up: async (queryInterface, Sequelize) => {
-        await queryInterface.createTable('configs', {
+        await queryInterface.createTable('sessions', {
             id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true
             },
-            session_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: {
-                    model: 'sessions',
-                    key: 'id'
-                }
-            },
-            key: {
+            phone_number: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            value: {
+            qr_code: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            name: {
                 type: Sequelize.STRING,
                 allowNull: false
+            },
+            api_key: {
+                type: Sequelize.STRING,
+                allowNull: false
+            },
+            wpp_status: {
+              type: Sequelize.TEXT,
+              allowNull: false,
+              defaultValue: 'UNLAUNCHED'
             },
             createdAt: {
                 allowNull: false,
@@ -35,6 +40,6 @@ module.exports = {
         });
     },
     down: async (queryInterface, Sequelize) => {
-        await queryInterface.dropTable('configs');
+        await queryInterface.dropTable('sessions');
     }
 };

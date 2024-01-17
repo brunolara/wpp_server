@@ -5,8 +5,6 @@ import {queue} from '../config/config.json';
 import {Job} from "bullmq";
 import {Base64Message, MessageType, PlainMessage, RemoteFileMessage} from "../DTO/Message";
 import { v4 as uuidv4 } from 'uuid';
-import {WppClient} from "../wpp";
-import {WAState} from "whatsapp-web.js";
 
 class MainController{
     async sendPlain(req: Request, res: Response){
@@ -87,23 +85,6 @@ class MainController{
     }
 
     async messageWorkController(job: Job){
-        console.log(`${job.name} started`);
-        if(job.data.type === MessageType.PLAIN){
-            const data: PlainMessage = job.data;
-            await ConversationService.handlePlainMessage(data.body.toString(), data.to, data.messageId);
-        }
-
-        if(job.data.type === MessageType.BASE64){
-            const data: Base64Message = job.data;
-            await ConversationService.handleBase64FileMessage(data.base64File, data.mimeType, data.fileName, data.to, data.messageId);
-        }
-
-        if(job.data.type === MessageType.REMOTE){
-            const data: RemoteFileMessage = job.data;
-            await ConversationService.handleFileUrl(data.fileUrl, data.fileName, data.to, data.messageId);
-        }
-
-        return true;
     }
 
     async getMessage(req: Request, res: Response){
@@ -113,12 +94,6 @@ class MainController{
         } catch (e: any) {
             return res.sendStatus(500).json({error: e?.message});
         }
-    }
-
-    async ping(req: Request, res: Response){
-        const currentState = await WppClient.getState()
-        if(currentState !== WAState.CONNECTED) return res.status(400).json({status: currentState});
-        return res.json({status: "Tudo ok!"});
     }
 }
 

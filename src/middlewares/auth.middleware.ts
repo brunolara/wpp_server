@@ -1,12 +1,17 @@
 import {NextFunction, Request, Response} from "express";
 import ConfigService, {CONFIGURATION} from "../services/config.service";
+import SessionService from "../services/session.service";
 
 export default async function checkAuthKey(req: Request, res: Response, next: NextFunction){
-    const authKey = await ConfigService.get(CONFIGURATION.AUTH_KEY);
-    if (!req.headers.authorization) {
+    const key = req.headers.authorization;
+    if (!key) {
         return res.status(403).json({ error: 'É necessário enviar as crendencias no header' });
     }
-    if(req.headers.authorization !== authKey)
+
+    const session = await SessionService.getByApiKey(key);
+    if(!session)
         return res.status(401).json({});
+
+    req.context = session;
     next();
 }

@@ -4,12 +4,12 @@ import { Webhook } from './webhook';
 import { Message } from './message';
 
 class WebhookHistory extends Model {
-    public id!: number;
-    public webhookId!: number;
-    public httpResponse!: string;
-    public messageId!: number | null;
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    declare id: number;
+    declare webhookId: number;
+    declare httpResponse: string;
+    declare messageId: number | null;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
 }
 
 WebhookHistory.init(

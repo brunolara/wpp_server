@@ -3,13 +3,13 @@ import { sequelize } from './';
 import {Message} from "./message";
 
 class Conversation extends Model {
-    public id!: number;
-    public isUserStarted!: boolean;
-    public userNumber!: string;
-    public lastInteractionDate!: Date;
-    public currentNumber!: string | null;
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    declare id: number;
+    declare isUserStarted: boolean;
+    declare userNumber: string;
+    declare lastInteractionDate: Date;
+    declare currentNumber: string | null;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
 }
 
 Conversation.init(

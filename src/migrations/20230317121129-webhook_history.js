@@ -8,6 +8,14 @@ module.exports = {
                 autoIncrement: true,
                 primaryKey: true
             },
+            session_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'sessions',
+                    key: 'id'
+                }
+            },
             webhookId: {
                 field: 'webhook_id',
                 type: Sequelize.INTEGER,
