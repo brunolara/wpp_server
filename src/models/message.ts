@@ -10,6 +10,7 @@ class Message extends Model {
     declare wppMessageId: string;
     declare conversationId: number;
     declare message: string | null;
+    declare conversation: Conversation | null;
     declare messageFilePath: string | null;
     declare isUser: boolean;
     declare readonly createdAt: Date;

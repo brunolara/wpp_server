@@ -1,8 +1,8 @@
 import {Client, LocalAuth, WAState} from "whatsapp-web.js";
 import path from "path";
 import {Session} from "../models/session";
-import WebhookService from "./webhook.service";
 import {WppService} from "./wpp.service";
+import webhookService from "./webhook.service";
 
 export interface EventReaction{
     [key: string]: (...args: any[]) => void;
@@ -13,7 +13,11 @@ class WppStateService {
 
 
     async createWppSession(s: Session){
-        if(this.sessions.find(session => session.sessionId === s.id)) return;
+        if(this.sessions.find(session => session.sessionId === s.id)){
+            console.log("session already exists", " - Recreating session")
+            await this.restartSession(s.id);
+            return;
+        }
         const clientId = `session-${s.id}`;
         const client = new Client({
             authStrategy: new LocalAuth({
@@ -25,7 +29,7 @@ class WppStateService {
         client.initialize();
         const sessionService = new WppService(s.id, client, s.phone_number);
 
-        await sessionService.listenEvents(s.id);
+        await sessionService.listenEvents();
 
         this.sessions.push(sessionService);
         return sessionService;
@@ -34,12 +38,20 @@ class WppStateService {
     async restartSession(sessionId: number){
         const session = this.sessions.find(session => session.sessionId === sessionId);
         if(!session) return;
+        const currentState = await session.client.getState();
+        if(!currentState) return;
+        await webhookService.addStatusToQueue(WAState.UNLAUNCHED, sessionId);
+        await this.setWppSessionStatus(sessionId, WAState.UNLAUNCHED);
         await session.client.destroy();
         await session.client.initialize();
     }
 
     async startAll(){
-        const sessions = await Session.findAll();
+        const sessions = await Session.findAll({
+            where: {
+                wpp_status: 'CONNECTED'
+            }
+        });
         const promises = sessions.map(session => {
             return this.createWppSession(session);
         });
@@ -56,7 +68,8 @@ class WppStateService {
         if(!session) return;
         session.currentStatus = status;
         await Session.update({
-            wpp_status: status
+            wpp_status: status,
+            updatedAt: new Date()
         }, {
             where: {
                 id: sessionId
@@ -66,9 +79,11 @@ class WppStateService {
 
     async setQrCode(sessionId: number, qrcode?: String){
         const session = this.sessions.find(session => session.sessionId === sessionId);
-        if(!session) return;
+        if(!session || !qrcode) return;
         await Session.update({
-            qr_code: qrcode ?? null
+            qr_code: qrcode,
+            updatedAt: new Date(),
+            wpp_status: 'QR_CODE'
         }, {
             where: {
                 id: sessionId

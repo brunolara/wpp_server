@@ -7,7 +7,7 @@ class Session extends Model {
     declare phone_number: string;
     declare qr_code: string;
     declare api_key: string;
-    declare wpp_status: number;
+    declare wpp_status: string;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 }

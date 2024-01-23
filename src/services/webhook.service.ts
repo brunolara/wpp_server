@@ -8,6 +8,7 @@ import {queue} from '../config/config.json';
 class WebhookService{
     async getMessageByWppId(wppMessageId: string){
         return await Message.findOne({
+            include: ['conversation'],
             where: {
                 wppMessageId
             }
@@ -15,12 +16,16 @@ class WebhookService{
     }
 
     async callSessionWebhook(sessionId: number, event: any){
-        const webhookList = await Webhook.findAll({
-            where: {'status': 'active', session_Id: sessionId}
-        });
+        try{
+            const webhookList = await Webhook.findAll({
+                where: {'status': 'active', session_Id: sessionId}
+            });
 
-        const reqs = webhookList.map(item => axios.post(item.url, event, {timeout: 3000}));
-        await axios.all(reqs);
+            const reqs = webhookList.map(item => axios.post(item.url, event, {timeout: 3000}));
+            await axios.all(reqs);
+        } catch (e){
+            console.log(e)
+        }
     }
 
     addStatusToQueue(status: string, sessionId: number, data: any = {}){
@@ -42,20 +47,31 @@ class WebhookService{
     }
 
     async sendSendMessageError(messageId: string, sessionId: number, error: any){
-        const event = {type: 'send_message_error', error, messageId};
+        const message = await Message.findOne({where: {message_id: messageId}});
+        const event = {
+            type: 'send_message_error',
+            error,
+            messageId,
+            message: message?.toJSON()
+        };
         await this.callSessionWebhook(sessionId, event)
     }
 
-    async sendMessageStatusNotification(message: WppMessage, sessionId: number, status?: MessageAck){
-        const currentMessage = await this.getMessageByWppId(message.id._serialized);
+    async sendMessageStatusNotification(message: WppMessage, status?: MessageAck){
+        const currentMessage = (await this.getMessageByWppId(message.id._serialized));
         /* direct messages only */
-        if(!currentMessage) throw new Error('Message not found');
+        if(!currentMessage) return;
 
         currentMessage.wppMessageStatus = message.ack;
         await currentMessage.save();
 
-        const event = {type: 'message_ack', ack: status ?? message.ack, messageId: currentMessage.messageId};
-        await this.callSessionWebhook(sessionId, event)
+        const event = {
+            type: 'message_ack',
+            ack: status ?? message.ack,
+            message: currentMessage.toJSON(),
+            messageId: currentMessage.messageId
+        };
+        await this.callSessionWebhook(currentMessage.conversation?.sessionId ?? 0, event)
     }
 
     async addNumberCheckToQueue(number: string, sessionId: number, messageId?: string, status?: boolean){

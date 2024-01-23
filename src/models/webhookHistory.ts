@@ -1,7 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
 import { Webhook } from './webhook';
-import { Message } from './message';
 
 class WebhookHistory extends Model {
     declare id: number;

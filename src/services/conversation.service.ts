@@ -1,20 +1,35 @@
 import {Conversation} from "../models/conversation";
 import {Message} from "../models/message";
-import {Message as WppMessage, MessageAck} from 'whatsapp-web.js';
-import {getContactFromNumber, getMedia, getMediaFromBase64, sendMessage} from "../wpp";
 import {generateFileName, saveBaseToFile} from "../helpers/file.helper";
 import ConfigService, {CONFIGURATION} from "./config.service";
-import {Webhook} from "../models/webhook";
-import axios from "axios";
-import {WebhookType} from "../DTO/Webhook";
 import WebhookService from "./webhook.service";
 import {WppService} from "./wpp.service";
 import webhookService from "./webhook.service";
+import {MessageMedia} from "whatsapp-web.js";
 
 class ConversationService {
     session: WppService;
     constructor(session: WppService) {
         this.session = session;
+    }
+
+    async getMedia(url:string, fileName: string):Promise<MessageMedia | null>{
+        try {
+            return await MessageMedia.fromUrl(url,{
+                unsafeMime: true,
+                filename: fileName,
+            });
+        } catch (e){
+            return null;
+        }
+    }
+
+    async getMediaFromBase64(data: string, fileName: string, mimeType: string):Promise<MessageMedia | null>{
+        try {
+            return await new MessageMedia(mimeType, data, fileName)
+        } catch (e){
+            return null;
+        }
     }
 
     async saveSentMessage(to: string, body: string, filePath: string | null = null, messageId: string, wppMessageId?: string){
@@ -66,7 +81,7 @@ class ConversationService {
         }
         const generatedName = generateFileName(fileName);
         const pathToSave = `${contactId.user}/${generatedName}`;
-        const message = await getMediaFromBase64(base64File, fileName, mimeType);
+        const message = await this.getMediaFromBase64(base64File, fileName, mimeType);
         const localPath = await saveBaseToFile(pathToSave, mimeType, base64File);
         if(message) {
             const messageResponse = await this.session.sendMessage(to, message);
@@ -84,7 +99,7 @@ class ConversationService {
             await this.sendNumberCheck(to, messageId, false);
             return null;
         }
-        const message = await getMedia(fileUrl, filename);
+        const message = await this.getMedia(fileUrl, filename);
         if(message) {
             const messageResponse = await this.session.sendMessage(to, message);
             const wppMessageId = messageResponse?.id._serialized;
@@ -121,6 +136,7 @@ class ConversationService {
             where: {messageId: id}
         });
     }
+
 }
 
 export default ConversationService;

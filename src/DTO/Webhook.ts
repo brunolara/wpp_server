@@ -1,5 +1,3 @@
-import {MessageAck} from "whatsapp-web.js";
-
 export enum WebhookType{
     MESSAGE_ACK = 'message_ack',
     NUMBER_CHECK = 'number_check',

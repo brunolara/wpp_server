@@ -46,7 +46,7 @@ export class WppService{
         await WppStateService.setQrCode(this.sessionId, qrcode);
     }
 
-    async listenEvents (sessionId: number){
+    async listenEvents (){
         await this.setQrCode();
         if(!this.client) {
             throw new Error("Session not found");
@@ -210,7 +210,8 @@ export class WppService{
 
     public eventReactions: EventReaction = {
         "qr": this.onQR,
-        "authenticated": async() => await this.onChangeState("authenticated"),
+      //  "authenticated": async() => await this.onChangeState("authenticated"),
+        "change_state" : async (state) => await this.onChangeState(state?.toString()),
         "auth_failure": async() => await this.onChangeState("auth_failure"),
         "ready": async() => await this.onChangeState("ready"),
         "message_ack": this.onMessageAck,

@@ -1,6 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
-import {Message} from "./message";
 
 class Conversation extends Model {
     declare id: number;

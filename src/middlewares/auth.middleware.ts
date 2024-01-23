@@ -1,5 +1,4 @@
 import {NextFunction, Request, Response} from "express";
-import ConfigService, {CONFIGURATION} from "../services/config.service";
 import SessionService from "../services/session.service";
 
 export default async function checkAuthKey(req: Request, res: Response, next: NextFunction){

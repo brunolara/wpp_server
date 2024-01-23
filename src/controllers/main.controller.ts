@@ -1,10 +1,9 @@
 import {Request, Response} from "express";
 import ConversationService from "../services/conversation.service";
-import {MainQueue} from "../queue/main";
-import {MessageType} from "../DTO/Message";
-import { v4 as uuidv4 } from 'uuid';
-import {MessageRequest, ResponseItem, WppService} from "../services/wpp.service";
-import {Session} from "../models/session";
+
+import {ResponseItem, WppService} from "../services/wpp.service";
+import wppStateService from "../services/wpp.state.service";
+import {WAState} from "whatsapp-web.js";
 
 class MainController{
     async sendMessage(req: Request, res: Response){
@@ -36,6 +35,18 @@ class MainController{
         } catch (e: any) {
             return res.sendStatus(500).json({error: e?.message});
         }
+    }
+
+    async getState(req: Request, res: Response){
+        const session = wppStateService.getWppSession(req.context.id);
+        if(!session) return res.json({status: "A máquina não está conectada, use o endpoint /start para iniciar"});
+        const status = (await session.client?.getState()) ?? WAState.UNPAIRED
+        return res.json({status});
+    }
+
+    start(req: Request, res: Response){
+        wppStateService.createWppSession(req.context);
+        return res.sendStatus(200);
     }
 }
 
