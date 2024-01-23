@@ -2,6 +2,27 @@ import WppStateService, {EventReaction} from "./wpp.state.service";
 import {Client, MessageMedia, WAState} from "whatsapp-web.js";
 import WebhookService from "./webhook.service";
 import qrcode from "qrcode-terminal";
+import {v4 as uuidv4} from "uuid";
+import {MainQueue} from "../queue/main";
+import {MessageType} from "../DTO/Message";
+import {Session} from "../models/session";
+
+export interface MessageRequest{
+    to: string,
+    base64File?: string,
+    fileUrl?: string,
+    mimeType?: string,
+    fileName?: string,
+    body?: string,
+    id?: number,
+}
+
+export interface ResponseItem{
+    messageId: string,
+    success: boolean,
+    errorMessage: string,
+    id?: number
+}
 
 export class WppService{
     client: Client;
@@ -100,6 +121,90 @@ export class WppService{
         } catch (e){
             return null;
         }
+    }
+
+    static async processMessage(request: MessageRequest, sessionData: Session){
+        const {
+            to = '',
+            body = null,
+            id = undefined,
+            base64File = null,
+            fileUrl = null,
+        } = request as MessageRequest;
+        if(base64File || fileUrl){
+            return await WppService.sendFile(request, sessionData);
+        }
+        else {
+            const responseItem: ResponseItem = {messageId: '', success: false, errorMessage: '', id};
+            if (!body || body.length === 0) {
+                responseItem.errorMessage = 'Mensagem vazia';
+                return responseItem
+            }
+
+            responseItem.messageId = uuidv4();
+
+            await MainQueue.add(`${to.trim()}_${new Date().getTime()}`,
+                {
+                    to: to.trim(),
+                    body,
+                    type: MessageType.PLAIN,
+                    messageId: responseItem.messageId,
+                    sessionData: sessionData
+                }
+            );
+
+            responseItem.success = true;
+            return responseItem;
+        }
+    }
+
+    static async sendFile(data: MessageRequest, sessionData: Session): Promise<ResponseItem> {
+        const messageId = uuidv4();
+        const {
+            to = '',
+            base64File = null,
+            fileUrl = null,
+            mimeType = null,
+            fileName = null,
+            body = null,
+            id,
+        } = data;
+        if(!base64File && !fileUrl && !body)
+            return {messageId, success: false, errorMessage: 'Mensagem vazia', id};
+        if(base64File) {
+            if (!mimeType){
+                return {
+                    messageId,
+                    success: false,
+                    errorMessage: 'Arquivos em base64 precisam ter o mimeType',
+                    id
+                }
+            }
+            if (!fileName){
+                return {
+                    messageId,
+                    success: false,
+                    errorMessage: 'Arquivos em base64 precisam ter um nome: nome.extensão',
+                    id
+                }
+            }
+            await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
+                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64, messageId, sessionData, id},
+            );
+        }
+        else if(fileUrl){
+            if (!fileName){
+                return {
+                    messageId,
+                    success: false,
+                    errorMessage: 'Arquivos em URL precisam ter um nome: nome.extensão'
+                }
+            }
+            await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
+                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE, messageId, sessionData, id},
+            );
+        }
+        return {messageId, success: true, errorMessage: '', id};
     }
 
 

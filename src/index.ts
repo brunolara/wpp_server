@@ -5,7 +5,7 @@ import {Config} from "./models/config";
 import wppStateService from "./services/wpp.state.service";
 import MainController from "./controllers/main.controller";
 import {startWorkers} from "./queue/worker";
-
+import {api} from './config/config.json'
 
 wppStateService.startAll().then((clients) => {
     startWorkers();
@@ -35,17 +35,16 @@ route.get('/teste', (req, res) => {
         res.json(configs);
     });
     // res.json({message: 'ok'})
-})
+});
 route.use(checkAuthKey);
 
-route.post('/sendMessage', MainController.sendPlain);
+route.post('/sendMessage', MainController.sendMessage);
 route.post('/sendMessageBulk', MainController.sendBulk);
-route.post('/sendFile', MainController.sendFile);
+route.post('/sendFile', MainController.sendMessage);
 route.get('/getMessage/:messageId', MainController.getMessage);
 // route.get('/ping');
 
-
 app.use(route);
 
-app.listen(3333, () => console.log('server running on port 3333'));
+app.listen(api.port, () => console.log('server running on port ' + api.port));
 
