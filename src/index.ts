@@ -30,7 +30,6 @@ route.use(checkAuthKey);
 
 route.post('/sendMessage', MainController.sendMessage);
 route.post('/sendMessageBulk', MainController.sendBulk);
-route.post('/sendFile', MainController.sendMessage);
 route.get('/getMessage/:messageId', MainController.getMessage);
 route.get('/state', MainController.getState);
 route.get('/start', MainController.start);

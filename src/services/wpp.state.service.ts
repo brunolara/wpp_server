@@ -55,7 +55,6 @@ class WppStateService {
         const promises = sessions.map(session => {
             return this.createWppSession(session);
         });
-        console.log(sessions)
         return Promise.all(promises);
     }
 

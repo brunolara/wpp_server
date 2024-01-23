@@ -41,7 +41,7 @@ const webhookWorker = new Worker(queue.webhookQueueName, async (job) => {
         await WebhookService.sendMessageStatusNotification(data.message);
     }
     if(data.type === WebhookType.NUMBER_CHECK){
-        await WebhookService.sendValidateNumber(data.number, data.messageId, data.status);
+        await WebhookService.sendValidateNumber(data.number, data.sessionId, data.messageId, data.status);
     }
     if(data.type === WebhookType.CONN_STATUS){
         await WebhookService.sendConStatus(data.status, data.sessionId, data.data);
