@@ -1,11 +1,23 @@
 import {Message} from "../models/message";
 import {Message as WppMessage, MessageAck} from "whatsapp-web.js";
 import {Webhook} from "../models/webhook";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import {WebhookType} from "../DTO/Webhook";
 import {WebhookQueue} from "../queue/main";
 import {queue} from '../config/config.json';
+import {WebhookHistory} from "../models/webhookHistory";
+import {URL} from "url";
+
 class WebhookService{
+    stringIsAValidUrl(s: string | null){
+        try {
+            if(typeof s !== 'string') return false;
+            new URL(s);
+            return true;
+        } catch (err) {
+            return false;
+        }
+    }
     async getMessageByWppId(wppMessageId: string){
         return await Message.findOne({
             include: ['conversation'],
@@ -16,15 +28,33 @@ class WebhookService{
     }
 
     async callSessionWebhook(sessionId: number, event: any){
+        const historyData = ({
+            webhookId: 0,
+            httpResponse: 0,
+            messageId: event.message?.id ?? null,
+            eventData: event ?? {},
+        });
         try{
-            const webhookList = await Webhook.findAll({
+            const webhook = await Webhook.findOne({
                 where: {'status': 'active', session_Id: sessionId}
             });
 
-            const reqs = webhookList.map(item => axios.post(item.url, event, {timeout: 3000}));
-            await axios.all(reqs);
+            if(!webhook || !webhook.url || !this.stringIsAValidUrl(webhook.url)) return true;
+
+            historyData.webhookId = webhook?.id ?? 0;
+
+            const response = await axios.post(webhook.url, event, {timeout: 3000});
+            historyData.httpResponse = response.status;
+            await WebhookHistory.create(historyData);
+            return true;
+
         } catch (e){
             console.log(e)
+            if(e instanceof AxiosError) {
+                historyData.httpResponse = e.status ?? 0;
+                await WebhookHistory.create(historyData);
+            }
+            return false;
         }
     }
 
@@ -36,7 +66,7 @@ class WebhookService{
     }
     async sendConStatus(status: string, sessionId :number, data: any = {}){
         const event = {type: 'conn_status', status, data};
-        await this.callSessionWebhook(sessionId, event);
+        return await this.callSessionWebhook(sessionId, event);
     }
 
     async addSendMessageErrorQueue(messageId: string, sessionId: number, error: any){
@@ -54,13 +84,13 @@ class WebhookService{
             messageId,
             message: message?.toJSON()
         };
-        await this.callSessionWebhook(sessionId, event)
+        return await this.callSessionWebhook(sessionId, event)
     }
 
-    async sendMessageStatusNotification(message: WppMessage, status?: MessageAck){
+    async sendMessageStatusNotification(message: WppMessage, status?: MessageAck, creationTimeStamp?: number){
         const currentMessage = (await this.getMessageByWppId(message.id._serialized));
         /* direct messages only */
-        if(!currentMessage) return;
+        if(!currentMessage) return true;
 
         currentMessage.wppMessageStatus = message.ack;
         await currentMessage.save();
@@ -69,9 +99,10 @@ class WebhookService{
             type: 'message_ack',
             ack: status ?? message.ack,
             message: currentMessage.toJSON(),
-            messageId: currentMessage.messageId
+            messageId: currentMessage.messageId,
+            creationTimeStamp
         };
-        await this.callSessionWebhook(currentMessage.conversation?.sessionId ?? 0, event)
+        return await this.callSessionWebhook(currentMessage.conversation?.sessionId ?? 0, event)
     }
 
     async addNumberCheckToQueue(number: string, sessionId: number, messageId?: string, status?: boolean){
@@ -90,7 +121,7 @@ class WebhookService{
 
     async sendValidateNumber(number: string, sessionId: number, messageId?: string, valid?: boolean){
         const event = {type: WebhookType.NUMBER_CHECK, number, valid, messageId};
-        await this.callSessionWebhook(sessionId, event);
+        return await this.callSessionWebhook(sessionId, event);
     }
 }
 

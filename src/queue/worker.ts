@@ -37,18 +37,23 @@ const messageWorker = new Worker(queue.messageQueueName, async (job: Job) => {
 
 const webhookWorker = new Worker(queue.webhookQueueName, async (job) => {
     const data = job.data;
+    console.log(`${job.name} started`);
+    const creationDate = job.timestamp;
+    let res = true;
     if(data.type === WebhookType.MESSAGE_ACK){
-        await WebhookService.sendMessageStatusNotification(data.message);
+        res &&= await WebhookService.sendMessageStatusNotification(data.message, undefined, creationDate);
     }
     if(data.type === WebhookType.NUMBER_CHECK){
-        await WebhookService.sendValidateNumber(data.number, data.sessionId, data.messageId, data.status);
+        res &&= await WebhookService.sendValidateNumber(data.number, data.sessionId, data.messageId, data.status);
     }
     if(data.type === WebhookType.CONN_STATUS){
-        await WebhookService.sendConStatus(data.status, data.sessionId, data.data);
+        res &&= await WebhookService.sendConStatus(data.status, data.sessionId, data.data);
     }
     if(data.type === WebhookType.SEND_MESSAGE_ERROR){
-        await WebhookService.sendSendMessageError(data.messageId, data.sessionId, data.error);
+        res &&= await WebhookService.sendSendMessageError(data.messageId, data.sessionId, data.error);
     }
+    if(!res) throw new Error('Erro ao processar webhook');
+    return true;
 }, {
     connection: queue.connection,
     autorun: false

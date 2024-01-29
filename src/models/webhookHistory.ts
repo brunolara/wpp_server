@@ -1,6 +1,7 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
 import { Webhook } from './webhook';
+import {Session} from "./session";
 
 class WebhookHistory extends Model {
     declare id: number;
@@ -30,6 +31,11 @@ WebhookHistory.init(
             onUpdate: 'cascade',
             onDelete: 'cascade'
         },
+        eventData: {
+            field: 'event_data',
+            type: DataTypes.JSONB,
+            allowNull: true
+        },
         httpResponse: {
             field: 'http_response',
             type: DataTypes.STRING,
@@ -44,8 +50,12 @@ WebhookHistory.init(
     {
         sequelize,
         modelName: 'webhookHistory',
+        tableName: 'webhook_history',
         timestamps: true
     }
 );
+
+WebhookHistory.belongsTo(Webhook)
+WebhookHistory.belongsTo(Session)
 
 export { WebhookHistory };

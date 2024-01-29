@@ -1,20 +1,12 @@
 'use strict';
 module.exports = {
     up: async (queryInterface, Sequelize) => {
-        await queryInterface.createTable('webhook_histories', {
+        await queryInterface.createTable('webhook_history', {
             id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true
-            },
-            session_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: {
-                    model: 'sessions',
-                    key: 'id'
-                }
             },
             webhookId: {
                 field: 'webhook_id',
@@ -32,6 +24,11 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false
             },
+            eventData: {
+                field: 'event_data',
+                type: Sequelize.JSONB,
+                allowNull: true
+            },
             messageId: {
                 field: 'message_id',
                 type: Sequelize.INTEGER,
@@ -48,6 +45,6 @@ module.exports = {
         });
     },
     down: async (queryInterface, Sequelize) => {
-        await queryInterface.dropTable('webhook_histories');
+        await queryInterface.dropTable('webhook_history');
     }
 };
