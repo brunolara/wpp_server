@@ -26,7 +26,7 @@ module.exports = {
             },
             eventData: {
                 field: 'event_data',
-                type: Sequelize.JSONB,
+                type: Sequelize.JSON,
                 allowNull: true
             },
             messageId: {
