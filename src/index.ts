@@ -24,15 +24,17 @@ const app = express();
 const route = Router()
 
 app.use(express.json())
+app.set('view engine', 'ejs');
 app.use('/uploads', express.static('uploads'));
 
-route.use(checkAuthKey);
 
-route.post('/sendMessage', MainController.sendMessage);
-route.post('/sendMessageBulk', MainController.sendBulk);
-route.get('/getMessage/:messageId', MainController.getMessage);
-route.get('/state', MainController.getState);
-route.get('/start', MainController.start);
+route.post('/sendMessage', checkAuthKey, MainController.sendMessage);
+route.post('/sendMessageBulk', checkAuthKey, MainController.sendBulk);
+route.get('/getMessage/:messageId', checkAuthKey, MainController.getMessage);
+route.get('/state', checkAuthKey, MainController.getState);
+route.get('/start', checkAuthKey, MainController.start);
+route.get('/qr', MainController.qr);
+
 
 // route.get('/ping');
 

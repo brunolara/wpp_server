@@ -4,6 +4,7 @@ import ConversationService from "../services/conversation.service";
 import {ResponseItem, WppService} from "../services/wpp.service";
 import wppStateService from "../services/wpp.state.service";
 import {WAState} from "whatsapp-web.js";
+import sessionService from "../services/session.service";
 
 class MainController{
     async sendMessage(req: Request, res: Response){
@@ -47,6 +48,11 @@ class MainController{
     start(req: Request, res: Response){
         wppStateService.createWppSession(req.context);
         return res.sendStatus(200);
+    }
+
+    async qr(req: Request, res: Response){
+        const qr = await sessionService.getQrCode(req.query.apikey?.toString() ?? '');
+        return res.render('qrcode', {qr});
     }
 }
 

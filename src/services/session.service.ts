@@ -9,6 +9,12 @@ class SessionService{
         });
     }
 
+    async getQrCode(apiKey: string){
+        const session = await this.getByApiKey(apiKey);
+        if(!session) return null;
+        return session.qr_code;
+    }
+
     async getAll(){
         return Session.findAll();
     }
