@@ -25,17 +25,19 @@ module.exports = {
                 allowNull: false
             },
             wpp_status: {
-              type: Sequelize.TEXT,
-              allowNull: false,
-              defaultValue: 'UNLAUNCHED'
+                type: Sequelize.TEXT,
+                allowNull: false,
+                defaultValue: 'UNLAUNCHED'
             },
             createdAt: {
                 allowNull: false,
-                type: Sequelize.literal('CURRENT_TIMESTAMP'),
+                type: 'TIMESTAMP',
+                defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
             },
             updatedAt: {
                 allowNull: false,
-                type: Sequelize.literal('CURRENT_TIMESTAMP')
+                type: 'TIMESTAMP',
+                defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
             }
         });
     },
