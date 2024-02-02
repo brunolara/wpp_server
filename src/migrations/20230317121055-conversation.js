@@ -8,6 +8,14 @@ module.exports = {
                 autoIncrement: true,
                 primaryKey: true
             },
+            contact_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'contacts',
+                    key: 'id'
+                }
+            },
             session_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
@@ -21,11 +29,6 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 allowNull: false,
                 defaultValue: false
-            },
-            userNumber: {
-                field: 'user_number',
-                type: Sequelize.STRING,
-                allowNull: false
             },
             lastInteractionDate: {
                 field: 'last_interaction_date',

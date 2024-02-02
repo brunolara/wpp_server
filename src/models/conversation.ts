@@ -1,10 +1,11 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from './';
+import {Contact} from "./contact";
 
 class Conversation extends Model {
     declare id: number;
     declare isUserStarted: boolean;
-    declare userNumber: string;
+    declare contactId: number;
     declare lastInteractionDate: Date;
     declare currentNumber: string | null;
     declare sessionId: number;
@@ -20,6 +21,15 @@ Conversation.init(
             autoIncrement: true,
             primaryKey: true
         },
+        contactId: {
+            field: 'contact_id',
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'contacts',
+                key: 'id'
+            }
+        },
         sessionId: {
             type: DataTypes.INTEGER,
             field: 'session_id',
@@ -34,11 +44,6 @@ Conversation.init(
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: false
-        },
-        userNumber: {
-            field: 'user_number',
-            type: DataTypes.STRING,
-            allowNull: false
         },
         lastInteractionDate: {
             field: 'last_interaction_date',
@@ -57,5 +62,7 @@ Conversation.init(
         timestamps: true
     }
 );
+
+Conversation.belongsTo(Contact, {foreignKey: 'contact_id'})
 
 export { Conversation };

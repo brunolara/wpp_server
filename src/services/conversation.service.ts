@@ -5,12 +5,17 @@ import ConfigService, {CONFIGURATION} from "./config.service";
 import WebhookService from "./webhook.service";
 import {WppService} from "./wpp.service";
 import webhookService from "./webhook.service";
-import {MessageMedia} from "whatsapp-web.js";
+import {MessageMedia, Message as WppMessage} from "whatsapp-web.js";
+import {MessageSaveDTO} from "../DTO/Message";
+import {v4 as uuidv4} from "uuid";
+import {ContactService} from "./contact.service";
 
 class ConversationService {
     session: WppService;
+    contactService: ContactService;
     constructor(session: WppService) {
         this.session = session;
+        this.contactService = new ContactService(session);
     }
 
     async getMedia(url:string, fileName: string):Promise<MessageMedia | null>{
@@ -32,11 +37,25 @@ class ConversationService {
         }
     }
 
-    async saveSentMessage(to: string, body: string, filePath: string | null = null, messageId: string, wppMessageId?: string){
+    async saveMessage(data: MessageSaveDTO){
         try {
+            const {
+                to,
+                from,
+                body,
+                filePath = null,
+                messageId,
+                wppMessageId,
+                isUser = false,
+            } = data;
+            // se o to for nulo a msg é do usuário
+            const userNumber = isUser ? from : to;
+            if(!userNumber) return null;
+
+            const contactId = await this.contactService.saveContact(userNumber);
             const conversation = await Conversation.findOne({
                 where: {
-                    user_number: to,
+                    contact_id: contactId.id,
                     session_id: this.session.sessionId
                 }
             });
@@ -51,8 +70,8 @@ class ConversationService {
             else {
                 const c = Conversation.build({
                     sessionId: this.session.sessionId,
-                    isUserStarted: false,
-                    userNumber: to,
+                    isUserStarted: isUser,
+                    contactId: contactId.id,
                     lastInteractionDate: new Date(),
                     currentNumber: await ConfigService.get(CONFIGURATION.CURRENT_PHONE_NUMBER),
                 });
@@ -64,7 +83,7 @@ class ConversationService {
                 conversationId: conversationId,
                 message: body,
                 messageFilePath: filePath,
-                isUser: false,
+                isUser,
                 messageId,
                 wppMessageId
             })
@@ -76,18 +95,31 @@ class ConversationService {
     async handleBase64FileMessage(base64File: string, mimeType: string, fileName: string, to: string, messageId: string){
         const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.sendNumberCheck(to, messageId, false);
+            await this.contactService.invalidateContact(to);
             return null;
         }
-        const generatedName = generateFileName(fileName);
-        const pathToSave = `${contactId.user}/${generatedName}`;
+        const pathToSave = `${contactId.user}`;
         const message = await this.getMediaFromBase64(base64File, fileName, mimeType);
         const localPath = await saveBaseToFile(pathToSave, mimeType, base64File);
         if(message) {
             const messageResponse = await this.session.sendMessage(to, message);
-            const wppMessageId = messageResponse?.id._serialized;
-            await this.saveSentMessage(contactId?.user ?? '', '', localPath, messageId, wppMessageId);
-            return messageResponse;
+
+            if(messageResponse){
+                const chat = await messageResponse.getChat();
+                const contact = await chat.getContact();
+                await this.contactService.updateContact(contactId.user, contact);
+                const wppMessageId = messageResponse?.id._serialized;
+                const messageDto: MessageSaveDTO = {
+                    to: contactId.user,
+                    body: '',
+                    filePath: localPath,
+                    messageId,
+                    wppMessageId,
+                    isUser: false
+                };
+                await this.saveMessage(messageDto);
+                return messageResponse;
+            }
         }
         await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on get media from base64')
         return null;
@@ -96,15 +128,29 @@ class ConversationService {
     async handleFileUrl(fileUrl: string, filename: string, to: string, messageId: string){
         const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.sendNumberCheck(to, messageId, false);
+            await this.contactService.invalidateContact(to);
             return null;
         }
         const message = await this.getMedia(fileUrl, filename);
         if(message) {
             const messageResponse = await this.session.sendMessage(to, message);
-            const wppMessageId = messageResponse?.id._serialized;
-            await this.saveSentMessage(contactId?.user ?? '', '', fileUrl, messageId, wppMessageId);
-            return messageResponse;
+
+            if(messageResponse){
+                const chat = await messageResponse.getChat();
+                const contact = await chat.getContact();
+                await this.contactService.updateContact(contactId.user, contact);
+                const wppMessageId = messageResponse?.id._serialized;
+                const messageDto: MessageSaveDTO = {
+                    to: contactId.user,
+                    body: '',
+                    filePath: fileUrl,
+                    messageId,
+                    wppMessageId,
+                    isUser: false
+                };
+                await this.saveMessage(messageDto);
+                return messageResponse;
+            }
         }
         await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on get media from url')
         return null;
@@ -113,28 +159,67 @@ class ConversationService {
     async handlePlainMessage(body: string, to: string, messageId: string){
         const contactId = await this.session.getContactFromNumber(to);
         if(!contactId) {
-            await this.sendNumberCheck(to, messageId, false);
+            await this.contactService.invalidateContact(to);
             return null;
         }
         const messageResponse = await this.session.sendMessage(to, body);
         const wppMessageId = messageResponse?.id._serialized;
         if(messageResponse) {
-            await this.saveSentMessage(contactId?.user ?? '', body, null, messageId, wppMessageId);
+            const chat = await messageResponse.getChat();
+            const contact = await chat.getContact();
+            await this.contactService.updateContact(contactId.user, contact);
+
+            const messageDto: MessageSaveDTO = {
+                to: contactId.user,
+                body,
+                messageId,
+                wppMessageId,
+                isUser: false
+            };
+            await this.saveMessage(messageDto);
             return messageResponse;
         }
         await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on send message')
         return null;
     }
 
-    async sendNumberCheck(number: string, messageId?: string, valid?: boolean){
-        if(valid === undefined) valid = !!(await this.session.getContactFromNumber(number));
-        await WebhookService.addNumberCheckToQueue(number, this.session.sessionId, messageId, valid);
-    }
-
     static async getMessageById(id: string){
         return await Message.findOne({
             where: {messageId: id}
         });
+    }
+
+    async onMessage(message: WppMessage){
+        const chat = await message.getChat();
+        if(chat.isGroup) return;
+        const wppContact = await chat.getContact();
+        await this.contactService.updateContact(message.from.split('@')[0], wppContact);
+        const {from, body, id} = message;
+        const media = message.hasMedia ? await message.downloadMedia() : null;
+        let fileUrl = null;
+        if(media) {
+            fileUrl = await saveBaseToFile(from.split('@')[0], media.mimetype, media.data);
+        }
+        const messageDto: MessageSaveDTO = {
+            from: from.split('@')[0],
+            body: body,
+            filePath: fileUrl,
+            messageId: uuidv4(),
+            wppMessageId: id._serialized,
+            isUser: true
+        };
+        const savedMessage= await this.saveMessage(messageDto);
+
+        if(savedMessage) {
+            const message = await Message.findByPk(savedMessage.id, {
+                include: {
+                    model: Conversation,
+                    as: 'conversation',
+                    include: ['contact']
+                }
+            })
+            webhookService.addUserMessageToQueue(message!, this.session.sessionId);
+        }
     }
 
 }

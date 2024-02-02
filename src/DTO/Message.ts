@@ -23,4 +23,14 @@ interface RemoteFileMessage extends BaseMessage{
     fileName: string,
 }
 
-export {PlainMessage, MessageType, Base64Message, RemoteFileMessage}
+interface MessageSaveDTO{
+    to?: string,
+    from?: string,
+    body: string,
+    filePath?: string | null,
+    messageId: string,
+    wppMessageId?: string,
+    isUser: boolean
+}
+
+export {PlainMessage, MessageType, Base64Message, RemoteFileMessage, MessageSaveDTO}

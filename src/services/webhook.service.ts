@@ -105,9 +105,9 @@ class WebhookService{
         return await this.callSessionWebhook(currentMessage.conversation?.sessionId ?? 0, event)
     }
 
-    async addNumberCheckToQueue(number: string, sessionId: number, messageId?: string, status?: boolean){
-        await WebhookQueue.add(`number_check_${number}_${new Date().getTime()}`,
-            {number, type: WebhookType.NUMBER_CHECK, status, messageId, sessionId},
+    async addNumberCheckToQueue(contact: any, sessionId: number){
+        await WebhookQueue.add(`number_check_${contact.rawNumber}_${new Date().getTime()}`,
+            {contact, type: WebhookType.NUMBER_CHECK, sessionId},
             queue.webhookJobOptions
         );
     }
@@ -119,8 +119,20 @@ class WebhookService{
         );
     }
 
-    async sendValidateNumber(number: string, sessionId: number, messageId?: string, valid?: boolean){
-        const event = {type: WebhookType.NUMBER_CHECK, number, valid, messageId};
+    async sendValidateNumber(contact: any, sessionId: number){
+        const event = {type: WebhookType.NUMBER_CHECK, contact};
+        return await this.callSessionWebhook(sessionId, event);
+    }
+
+    async addUserMessageToQueue(message: Message, sessionId: number){
+        await WebhookQueue.add(`user_message_${message.id}_${new Date().getTime()}`,
+            {message, type: WebhookType.USER_MESSAGE, sessionId},
+            queue.webhookJobOptions
+        );
+    }
+
+    async sendUserMessage(message: Message, sessionId: number){
+        const event = {type: WebhookType.USER_MESSAGE, message};
         return await this.callSessionWebhook(sessionId, event);
     }
 }

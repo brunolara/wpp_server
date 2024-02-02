@@ -1,11 +1,12 @@
 import WppStateService, {EventReaction} from "./wpp.state.service";
-import {Client, MessageMedia, WAState} from "whatsapp-web.js";
+import {Client, MessageMedia, WAState, Message as WppMessage} from "whatsapp-web.js";
 import WebhookService from "./webhook.service";
 import qrcode from "qrcode-terminal";
 import {v4 as uuidv4} from "uuid";
 import {MainQueue} from "../queue/main";
 import {MessageType} from "../DTO/Message";
 import {Session} from "../models/session";
+import ConversationService from "./conversation.service";
 
 export interface MessageRequest{
     to: string,
@@ -29,12 +30,14 @@ export class WppService{
     phoneNumber: string;
     sessionId: number;
     currentStatus: WAState | string;
+    service: ConversationService;
     constructor(sessionId: number, client: Client, phoneNumber: string) {
         this.sessionId = sessionId;
         this.client = client;
         this.phoneNumber = phoneNumber;
         this.currentStatus = WAState.UNLAUNCHED;
         this.client = client;
+        this.service = new ConversationService(this);
     }
 
     async setStatus(state?: WAState | string){
@@ -207,6 +210,10 @@ export class WppService{
         return {messageId, success: true, errorMessage: '', id};
     }
 
+    async onMessage(msg: WppMessage){
+        await this.service.onMessage(msg);
+    }
+
 
     public eventReactions: EventReaction = {
         "qr": this.onQR,
@@ -215,6 +222,7 @@ export class WppService{
         "auth_failure": async() => await this.onChangeState("auth_failure"),
         "ready": async() => await this.onChangeState("ready"),
         "message_ack": this.onMessageAck,
+        "message": async (m) => await this.onMessage(m)
     };
 
 }

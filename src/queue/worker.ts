@@ -44,13 +44,16 @@ const webhookWorker = new Worker(queue.webhookQueueName, async (job) => {
         res &&= await WebhookService.sendMessageStatusNotification(data.message, undefined, creationDate);
     }
     if(data.type === WebhookType.NUMBER_CHECK){
-        res &&= await WebhookService.sendValidateNumber(data.number, data.sessionId, data.messageId, data.status);
+        res &&= await WebhookService.sendValidateNumber(data.contact, data.sessionId);
     }
     if(data.type === WebhookType.CONN_STATUS){
         res &&= await WebhookService.sendConStatus(data.status, data.sessionId, data.data);
     }
     if(data.type === WebhookType.SEND_MESSAGE_ERROR){
         res &&= await WebhookService.sendSendMessageError(data.messageId, data.sessionId, data.error);
+    }
+    if(data.type === WebhookType.USER_MESSAGE){
+        res &&= await WebhookService.sendUserMessage(data.message, data.sessionId);
     }
     if(!res) throw new Error('Erro ao processar webhook');
     return true;
