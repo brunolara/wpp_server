@@ -47,11 +47,7 @@ class WppStateService {
     }
 
     async startAll(){
-        const sessions = await Session.findAll({
-            where: {
-                wpp_status: 'CONNECTED'
-            }
-        });
+        const sessions = await Session.findAll();
         const promises = sessions.map(session => {
             return this.createWppSession(session);
         });
