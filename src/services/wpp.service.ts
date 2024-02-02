@@ -108,7 +108,7 @@ export class WppService{
             }
             return await this.client.sendMessage(
                 `${contactId.user}@${contactId.server}`,
-                body, {caption: caption ?? ''}
+                body, {caption: caption ?? '', linkPreview: true}
             );
         } catch (e){
             return null;
