@@ -36,7 +36,7 @@ class WebhookService{
         });
         try{
             const webhook = await Webhook.findOne({
-                where: {'status': 'active', session_Id: sessionId}
+                where: {'status': 'active', session_id: sessionId}
             });
 
             if(!webhook || !webhook.url || !this.stringIsAValidUrl(webhook.url)) return true;
