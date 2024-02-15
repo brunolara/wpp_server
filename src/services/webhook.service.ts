@@ -43,7 +43,7 @@ class WebhookService{
 
             historyData.webhookId = webhook?.id ?? 0;
 
-            const response = await axios.post(webhook.url, event, {timeout: 3000});
+            const response = await axios.post(webhook.url, event, {timeout: 15000});
             historyData.httpResponse = response.status;
             await WebhookHistory.create(historyData);
             return true;
@@ -90,7 +90,13 @@ class WebhookService{
     async sendMessageStatusNotification(message: WppMessage, status?: MessageAck, creationTimeStamp?: number){
         const currentMessage = (await this.getMessageByWppId(message.id._serialized));
         /* direct messages only */
-        if(!currentMessage) return true;
+        if(!currentMessage) {
+            if(message.fromMe){
+                //retente depois
+                return false;
+            }
+            return true;
+        }
 
         currentMessage.wppMessageStatus = message.ack;
         await currentMessage.save();
@@ -105,9 +111,9 @@ class WebhookService{
         return await this.callSessionWebhook(currentMessage.conversation?.sessionId ?? 0, event)
     }
 
-    async addNumberCheckToQueue(contact: any, sessionId: number){
+    async addNumberCheckToQueue(contact: any, sessionId: number, status: boolean = true, requestId?: number){
         await WebhookQueue.add(`number_check_${contact.rawNumber}_${new Date().getTime()}`,
-            {contact, type: WebhookType.NUMBER_CHECK, sessionId},
+            {contact, type: WebhookType.NUMBER_CHECK, sessionId, status, id: requestId},
             queue.webhookJobOptions
         );
     }
@@ -115,12 +121,12 @@ class WebhookService{
     async addMessageStatusToQueue(msg: WppMessage){
         await WebhookQueue.add(`ack_${msg.id._serialized}_${msg.ack}`,
             {message:msg, type: WebhookType.MESSAGE_ACK},
-            queue.webhookJobOptions
+            {...queue.webhookJobOptions, delay: 1000}
         );
     }
 
-    async sendValidateNumber(contact: any, sessionId: number){
-        const event = {type: WebhookType.NUMBER_CHECK, contact};
+    async sendValidateNumber(contact: any, sessionId: number, status: boolean, requestId?: number){
+        const event = {type: WebhookType.NUMBER_CHECK, contact, status, id: requestId};
         return await this.callSessionWebhook(sessionId, event);
     }
 

@@ -3,6 +3,7 @@ import path from "path";
 import {Session} from "../models/session";
 import {WppService} from "./wpp.service";
 import webhookService from "./webhook.service";
+import {Op} from "sequelize";
 
 export interface EventReaction{
     [key: string]: (...args: any[]) => void;
@@ -46,8 +47,21 @@ class WppStateService {
         await session.client.initialize();
     }
 
+    async stopSession(session: Session){
+        const wppSession = this.sessions.find(s => s.sessionId === session.id);
+        if(wppSession){
+            await wppSession.client.destroy();
+        }
+    }
+
     async startAll(){
-        const sessions = await Session.findAll();
+        const sessions = await Session.findAll({
+            where:{
+                wpp_status: {
+                    [Op.ne]: 'DISABLED'
+                }
+            }
+        });
         const promises = sessions.map(session => {
             return this.createWppSession(session);
         });

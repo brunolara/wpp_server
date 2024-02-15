@@ -5,6 +5,7 @@ import ConversationService from "../services/conversation.service";
 import {WebhookType} from "../DTO/Webhook";
 import WebhookService from "../services/webhook.service";
 import WppStateService from "../services/wpp.state.service";
+import {ContactService} from "../services/contact.service";
 
 const messageWorker = new Worker(queue.messageQueueName, async (job: Job) => {
     console.log(`${job.name} started`);
@@ -14,6 +15,7 @@ const messageWorker = new Worker(queue.messageQueueName, async (job: Job) => {
         throw new Error('Ainda nao conectado');
     }
     const service = new ConversationService(session);
+    const contact = new ContactService(session);
     if(job.data.type === MessageType.PLAIN){
         const data: PlainMessage = job.data;
         await service.handlePlainMessage(data.body.toString(), data.to, data.messageId);
@@ -21,30 +23,36 @@ const messageWorker = new Worker(queue.messageQueueName, async (job: Job) => {
 
     if(job.data.type === MessageType.BASE64){
         const data: Base64Message = job.data;
-        await service.handleBase64FileMessage(data.base64File, data.mimeType, data.fileName, data.to, data.messageId);
+        await service.handleBase64FileMessage(data.base64File, data.mimeType, data.fileName, data.to, data.body ?? '', data.messageId);
     }
 
     if(job.data.type === MessageType.REMOTE){
         const data: RemoteFileMessage = job.data;
-        await service.handleFileUrl(data.fileUrl, data.fileName, data.to, data.messageId);
+        await service.handleFileUrl(data.fileUrl, data.fileName, data.to, data.body ?? '', data.messageId);
+    }
+
+    if(job.data.type === MessageType.CHECK_NUMBER){
+        const data = job.data;
+        await contact.checkNumber(data.number, data.id);
     }
 
     return true;
 }, {
     connection: queue.connection,
+    concurrency: 2,
     autorun: false
 });
 
 const webhookWorker = new Worker(queue.webhookQueueName, async (job) => {
     const data = job.data;
-    console.log(`${job.name} started`);
+    console.log(`${job.name} started`,' tentativa numero: ',job.attemptsMade);
     const creationDate = job.timestamp;
     let res = true;
     if(data.type === WebhookType.MESSAGE_ACK){
         res &&= await WebhookService.sendMessageStatusNotification(data.message, undefined, creationDate);
     }
     if(data.type === WebhookType.NUMBER_CHECK){
-        res &&= await WebhookService.sendValidateNumber(data.contact, data.sessionId);
+        res &&= await WebhookService.sendValidateNumber(data.contact, data.sessionId, data.status, data.id);
     }
     if(data.type === WebhookType.CONN_STATUS){
         res &&= await WebhookService.sendConStatus(data.status, data.sessionId, data.data);
@@ -59,6 +67,7 @@ const webhookWorker = new Worker(queue.webhookQueueName, async (job) => {
     return true;
 }, {
     connection: queue.connection,
+    concurrency: 1,
     autorun: false
 });
 

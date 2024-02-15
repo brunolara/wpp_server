@@ -11,8 +11,12 @@ export class ContactService{
         this.wppService = wppService;
     }
 
-    async addVerifiedContactToWebhook(contact: Contact){
-        await WebhookService.addNumberCheckToQueue(contact, this.wppService.sessionId);
+    async addVerifiedContactToWebhook(contact: Contact, requestId?: number){
+        await WebhookService.addNumberCheckToQueue(contact, this.wppService.sessionId, true, requestId);
+    }
+
+    async addUnverifiedContactToWebhook(contact: Contact, requestId?: number){
+        await WebhookService.addNumberCheckToQueue(contact, this.wppService.sessionId, false, requestId);
     }
 
     async invalidateContact(number: string){
@@ -27,37 +31,65 @@ export class ContactService{
     async shouldUpdatePhoto(contactId: number, photoUrl: string){
         const contact = await Contact.findByPk(contactId);
         if(!contact) return false;
+        if(!photoUrl) return false;
         return contact.photo !== `${md5(photoUrl)}.jpeg`;
 
     }
 
-    async updateContact(userNumber: string, wppContact: WppContact){
-        const contact = await Contact.findOne({
-            where: {rawNumber: userNumber}
-        });
-        const {name, number, shortName} = wppContact;
-        const status = await wppContact.getAbout();
-        const photoUrl = await wppContact.getProfilePicUrl();
-        if(!contact) {
-            const photo = await downloadProfilePhoto(`${userNumber}/profile`, photoUrl);
-            return await Contact.create({
-                wppId: wppContact.id._serialized,
-                name: name ?? shortName ?? '',
-                status,
-                photo,
-                rawNumber: number?.indexOf('@') !== -1 ? number : number?.split('@')[0],
-                verified: true,
-            });
+    async checkNumber(number: string, requestId?: number){
+        try{
+            const wppContact = await this.wppService.getContactFromNumber(number);
+            const contact = await this.saveContact(number);
+            if(contact.verified) {
+                console.warn("FROM CACHE")
+                await this.addVerifiedContactToWebhook(contact, requestId);
+                return true;
+            }
+            if(!wppContact) {
+                await this.invalidateContact(number);
+                await this.addUnverifiedContactToWebhook(contact, requestId);
+                return false;
+            }
+            await this.updateContact(number, wppContact, requestId);
+            return true;
+        } catch (e){
+            console.log(e)
         }
-        contact.wppId = wppContact.id._serialized;
-        contact.name = name ?? shortName ?? '';
-        contact.status = status ?? '';
-        if(await this.shouldUpdatePhoto(contact.id, photoUrl))
-            contact.photo = await downloadProfilePhoto(`${userNumber}/profile`, photoUrl) ?? '';
-        contact.verified = true;
-        const newContact = await contact.save();
-        await this.addVerifiedContactToWebhook(newContact);
-        return newContact;
+    }
+
+    async updateContact(userNumber: string, wppContact: WppContact, requestId?: number){
+        try{
+            let contact = await Contact.findOne({
+                where: {rawNumber: userNumber}
+            });
+            const {pushname, name, number, shortName} = wppContact;
+            const status = await wppContact.getAbout();
+            const photoUrl = await wppContact.getProfilePicUrl();
+            if(!contact) {
+                const photo = await downloadProfilePhoto(`${userNumber}/profile`, photoUrl);
+                contact = await Contact.create({
+                    wppId: wppContact.id._serialized,
+                    name: pushname ?? name ?? '',
+                    status,
+                    photo,
+                    rawNumber: number?.indexOf('@') !== -1 ? number : number?.split('@')[0],
+                    verified: true,
+                });
+            }else{
+                contact.wppId = wppContact.id._serialized;
+                contact.name = name ?? shortName ?? '';
+                contact.status = status ?? '';
+                if(await this.shouldUpdatePhoto(contact.id, photoUrl))
+                    contact.photo = await downloadProfilePhoto(`${userNumber}/profile`, photoUrl) ?? '';
+                contact.verified = true;
+                contact = await contact.save();
+            }
+            await this.addVerifiedContactToWebhook(contact, requestId);
+            return contact;
+        } catch (e){
+             console.warn(e);
+            throw e;
+        }
     }
 
     async saveContact(number: string){

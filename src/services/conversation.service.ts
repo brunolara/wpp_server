@@ -92,8 +92,8 @@ class ConversationService {
         }
     }
 
-    async handleBase64FileMessage(base64File: string, mimeType: string, fileName: string, to: string, messageId: string){
-        const contactId = await this.session.getContactFromNumber(to);
+    async handleBase64FileMessage(base64File: string, mimeType: string, fileName: string, to: string, body: string, messageId: string){
+        const contactId = await this.session.getContactIdFromNumber(to);
         if(!contactId) {
             await this.contactService.invalidateContact(to);
             return null;
@@ -102,7 +102,7 @@ class ConversationService {
         const message = await this.getMediaFromBase64(base64File, fileName, mimeType);
         const localPath = await saveBaseToFile(pathToSave, mimeType, base64File);
         if(message) {
-            const messageResponse = await this.session.sendMessage(to, message);
+            const messageResponse = await this.session.sendMessage(to, message, body);
 
             if(messageResponse){
                 const chat = await messageResponse.getChat();
@@ -111,7 +111,7 @@ class ConversationService {
                 const wppMessageId = messageResponse?.id._serialized;
                 const messageDto: MessageSaveDTO = {
                     to: contactId.user,
-                    body: '',
+                    body,
                     filePath: localPath,
                     messageId,
                     wppMessageId,
@@ -125,15 +125,15 @@ class ConversationService {
         return null;
     }
 
-    async handleFileUrl(fileUrl: string, filename: string, to: string, messageId: string){
-        const contactId = await this.session.getContactFromNumber(to);
+    async handleFileUrl(fileUrl: string, filename: string, to: string, body: string, messageId: string){
+        const contactId = await this.session.getContactIdFromNumber(to);
         if(!contactId) {
             await this.contactService.invalidateContact(to);
             return null;
         }
         const message = await this.getMedia(fileUrl, filename);
         if(message) {
-            const messageResponse = await this.session.sendMessage(to, message);
+            const messageResponse = await this.session.sendMessage(to, message, body);
 
             if(messageResponse){
                 const chat = await messageResponse.getChat();
@@ -142,7 +142,7 @@ class ConversationService {
                 const wppMessageId = messageResponse?.id._serialized;
                 const messageDto: MessageSaveDTO = {
                     to: contactId.user,
-                    body: '',
+                    body,
                     filePath: fileUrl,
                     messageId,
                     wppMessageId,
@@ -157,7 +157,7 @@ class ConversationService {
     }
 
     async handlePlainMessage(body: string, to: string, messageId: string){
-        const contactId = await this.session.getContactFromNumber(to);
+        const contactId = await this.session.getContactIdFromNumber(to);
         if(!contactId) {
             await this.contactService.invalidateContact(to);
             return null;
@@ -177,6 +177,7 @@ class ConversationService {
                 isUser: false
             };
             await this.saveMessage(messageDto);
+            console.log("Mensagem salva", body);
             return messageResponse;
         }
         await webhookService.addSendMessageErrorQueue(messageId, this.session.sessionId, 'Error on send message')

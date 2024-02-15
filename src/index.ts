@@ -31,8 +31,10 @@ app.use('/uploads', express.static('uploads'));
 route.post('/sendMessage', checkAuthKey, MainController.sendMessage);
 route.post('/sendMessageBulk', checkAuthKey, MainController.sendBulk);
 route.get('/getMessage/:messageId', checkAuthKey, MainController.getMessage);
+route.post('/checkNumberBulk', checkAuthKey, MainController.checkNumberBulk);
 route.get('/state', checkAuthKey, MainController.getState);
 route.get('/start', checkAuthKey, MainController.start);
+route.get('/stop', checkAuthKey, MainController.stop);
 route.get('/qr', MainController.qr);
 
 

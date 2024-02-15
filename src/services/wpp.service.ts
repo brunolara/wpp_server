@@ -77,6 +77,7 @@ export class WppService{
     }
 
     onMessageAck = async (message: any) => {
+        console.log(message.body, message.ack)
         await WebhookService.addMessageStatusToQueue(message)
     }
 
@@ -115,7 +116,7 @@ export class WppService{
         }
     }
 
-    async getContactFromNumber(number:string){
+    async getContactIdFromNumber(number:string){
         try {
             if(await this.client.getState() !== WAState.CONNECTED) return null;
             const contactId = await this.client.getNumberId(number);
@@ -124,6 +125,16 @@ export class WppService{
         } catch (e){
             return null;
         }
+    }
+
+    async getContactFromNumber(number:string){
+        if(await this.client.getState() !== WAState.CONNECTED){
+            console.log('instancia nao está rodando')
+            throw new Error('instancia nao está rodando');
+        }
+        const contactId = await this.client.getNumberId(number);
+        if(!contactId) return null;
+        return await this.client.getContactById(`${contactId.user}@${contactId.server}`);
     }
 
     static async processMessage(request: MessageRequest, sessionData: Session){
@@ -192,7 +203,7 @@ export class WppService{
                 }
             }
             await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
-                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64, messageId, sessionData, id},
+                {base64File, mimeType, fileName, to: to.trim(), type: MessageType.BASE64, messageId, sessionData, id, body},
             );
         }
         else if(fileUrl){
@@ -204,7 +215,7 @@ export class WppService{
                 }
             }
             await MainQueue.add(`${to.trim()}_${new Date().getMilliseconds()}`,
-                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE, messageId, sessionData, id},
+                {fileUrl, fileName, to: to.trim(), type: MessageType.REMOTE, messageId, sessionData, id, body},
             );
         }
         return {messageId, success: true, errorMessage: '', id};

@@ -1,12 +1,14 @@
 enum MessageType {
-    PLAIN = 'plain',
-    BASE64 = 'base64File',
-    REMOTE = 'remoteFile',
+    PLAIN = 'Messageplain',
+    BASE64 = 'Messagebase64File',
+    REMOTE = 'MessageremoteFile',
+    CHECK_NUMBER = 'MessagecheckNumber',
 }
 
 interface BaseMessage{
     to: string,
-    messageId: string
+    messageId: string,
+    body?: string,
 }
 interface PlainMessage extends BaseMessage{
     body: string,
