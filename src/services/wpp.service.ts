@@ -1,5 +1,5 @@
 import WppStateService, {EventReaction} from "./wpp.state.service";
-import {Client, MessageMedia, WAState, Message as WppMessage} from "whatsapp-web.js";
+import {Client, MessageMedia, WAState, Message as WppMessage, MessageSendOptions} from "whatsapp-web.js";
 import WebhookService from "./webhook.service";
 import qrcode from "qrcode-terminal";
 import {v4 as uuidv4} from "uuid";
@@ -103,13 +103,20 @@ export class WppService{
     async sendMessage(to: string, body: string | MessageMedia, caption: string | null = null){
         try {
             if(await this.client.getState() !== WAState.CONNECTED) return null;
+            let options: MessageSendOptions = {caption: caption ?? '', linkPreview: true};
             const contactId = await this.client.getNumberId(to);
+            if (body instanceof MessageMedia && body.mimetype.includes("video")) {
+                options = {
+                    ...options,
+                    sendMediaAsDocument: true
+                };
+            }
             if(contactId == null) {
                 return null;
             }
             return await this.client.sendMessage(
                 `${contactId.user}@${contactId.server}`,
-                body, {caption: caption ?? '', linkPreview: true}
+                body, options
             );
         } catch (e){
             return null;
