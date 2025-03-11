@@ -8,7 +8,12 @@ import {startWorkers, stopWorkers} from "../queue/worker";
 const WppClient = new Client({
     authStrategy: new LocalAuth({
         dataPath: path.resolve("./")
-    })
+    }),
+    puppeteer :{
+        args: [
+            '--no-sandbox',
+        ],
+    }
 })
 
 WppClient.on('disconnected', () => stopWorkers());

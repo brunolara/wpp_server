@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  whatsapp:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=production
+      # URL para conexão com o PostgreSQL (conexão interna na rede do Docker)
+      - DATABASE_URL=postgres://user:password@postgres:5432/database_name
+      # URL para conexão com o Redis
+      - REDIS_URL=redis://redis:6379
+
+
+
